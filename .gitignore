@@ -22,7 +22,6 @@ slurm*.out
 # Assets
 **.mp4
 **.csv
-**.txt
 **.pkl
 **.npy
 

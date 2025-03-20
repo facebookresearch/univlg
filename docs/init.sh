@@ -14,7 +14,7 @@ cd libs/pointops2
 rm -rf build
 python setup.py install
 cd -
-cd mask2former_video/modeling/pixel_decoder/ops
+cd univlg/modeling/pixel_decoder/ops
 rm -rf build
 sh make.sh
 cd -

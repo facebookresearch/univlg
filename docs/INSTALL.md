@@ -15,7 +15,7 @@ uv add --no-build-isolation \
 'flash-attn~=2.7.4' \
 'git+https://github.com/facebookresearch/detectron2.git@9604f5995cc628619f0e4fd913453b4d7d61db3f' \
 'git+https://github.com/facebookresearch/pytorch3d.git@7a3c0cbc9d7b0e70ef39b7f3c35e9ce2b7376f32'
-uv run bash docs/init.sh
+uv run bash docs/init.sh # Warning: You may need to set CUDA_HOME and TORCH_CUDA_ARCH_LIST (see below)
 ```
 
 
@@ -37,8 +37,8 @@ conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvi
 pip install torch-scatter -f https://data.pyg.org/whl/torch-2.5.1+cu124.html
 pip install 'git+https://github.com/facebookresearch/detectron2.git'
 pip install flash-attn==2.6.3 --no-build-isolation
-pip install -r requirements.txt
-bash docs/init.sh
+pip install -r docs/requirements.txt
+bash docs/init.sh # Warning: You may need to set CUDA_HOME and TORCH_CUDA_ARCH_LIST (see below)
 ```
 
 ### NTLK (Optional)
