@@ -36,6 +36,8 @@ The UniVLG checkpoints are available on [Hugging Face](https://huggingface.co/ka
 
 To install the dependencies, see [docs/INSTALL.md](docs/INSTALL.md).
 
+For instructions on how to download and pre-process the data, see [docs/DATA.md](docs/DATA.md).
+
 ### Checkpoints
 
 ```bash
