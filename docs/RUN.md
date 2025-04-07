@@ -12,7 +12,7 @@ To test only one dataset, e.g., sr3d, add run the following command:
 ```bash
 source scripts/setup.sh
 configure_local
-BS=2 NUM_VAL_DATALOADERS=2 NUM_DATALOADERS=10 $PREFIX "${PREFIX_ARGS[@]}" scripts/main.sh
+BS=2 NUM_VAL_DATALOADERS=2 NUM_DATALOADERS=10 $PREFIX "${PREFIX_ARGS[@]}" scripts/main.sh \
 DATASETS.TRAIN "('sr3d_ref_scannet_train_single',)" \
 DATASETS.TEST "('sr3d_ref_scannet_val_single_batched',)"
 ```

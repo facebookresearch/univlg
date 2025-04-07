@@ -80,7 +80,7 @@ configure_local() {
     export USE_SLURM=0;
     export PREFIX="bash";
     export PREFIX_ARGS="";
-    export NAME="local"
+    export NAME="univlg"
     export PREFIX_ARGS=()
     configure_shared
 }

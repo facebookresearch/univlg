@@ -66,7 +66,7 @@ dependencies = [
   "torchio~=0.20.0",
   "torchtnt~=0.2.4",
   "tqdm~=4.65",
-  "transformers~=4.44",
+  "transformers==4.44.2",
   "typer~=0.12.3",
   "viztracer~=0.16.0",
   "wandb~=0.19.7",

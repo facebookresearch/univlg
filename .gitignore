@@ -189,3 +189,4 @@ outputs/
 output/
 ignore/
 data/
+.env

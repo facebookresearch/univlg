@@ -42,13 +42,13 @@ For instructions on how to download and pre-process the data, see [docs/DATA.md]
 
 ```bash
 mkdir ckpts
-uvx --from huggingface_hub huggingface-cli download katefgroup/UniVLG --include "univlg.pth" --local-dir ckpts
+uvx --with hf_transfer --from huggingface_hub huggingface-cli download katefgroup/UniVLG --include "univlg.pth" --local-dir ckpts
 ```
 
 To download the 3D-only model, replace `univlg.pth` with `univlg_3d_only.pth` in the command above. Alternatively, to download all checkpoints, run:
 
 ```bash
-uvx --from huggingface_hub huggingface-cli download katefgroup/UniVLG --local-dir ckpts
+uvx --with hf_transfer --from huggingface_hub huggingface-cli download katefgroup/UniVLG --local-dir ckpts
 ```
 
 ### Training and Evaluation

@@ -115,8 +115,6 @@ class Sr3dDatasetMapper:
 
         if "tokens_positive" not in dataset_dict or self.USE_AUTO_NOUN_DETECTION:
             if self.USE_AUTO_NOUN_DETECTION and not self.is_train:
-                _, _, root_spans_spacy, _ = get_root_and_nouns(utterance)
-                tokens_positive_spacy = [consolidate_spans(root_spans_spacy, utterance)]
                 if self.span_preds is None:
                     span_pred_path = Path(f"{os.environ['PRECOMPUTED_SCANNET_PATH']}/span_pred_text.pth", weights_only=True)
                         
@@ -129,18 +127,20 @@ class Sr3dDatasetMapper:
                     return caption.lower().replace(".", "").replace(",", "").replace(" ", "")
                 
                 text_hash = hashlib.md5(normalize_caption(original_utterance).encode()).hexdigest()
-                tokens_positive_llm = None
+                tokens_positive = None
                 if text_hash in self.span_preds["hashes"]:
                     target_str = self.span_preds["target_strs"][self.span_preds["hashes"][text_hash]]
                     try:
-                        tokens_positive_llm = get_positive_tokens(utterance, [target_str])
+                        tokens_positive = get_positive_tokens(utterance, [target_str])
                     except ValueError as e:
-                        print(f"Failed to get positive tokens for {target_str}: {e}. tokens_positive_llm: \
-                              {tokens_positive_llm}, so using tokens_positive_spacy: {tokens_positive_spacy}")
+                        print(f"Failed to get positive tokens for {target_str}: {e}. tokens_positive: \
+                              {tokens_positive}")
                 else:
                     print(f"Failed to find hash: {text_hash} in span_preds")
 
-                tokens_positive = tokens_positive_llm if tokens_positive_llm is not None else tokens_positive_spacy
+                if tokens_positive is None:
+                    _, _, root_spans_spacy, _ = get_root_and_nouns(utterance)
+                    tokens_positive = [consolidate_spans(root_spans_spacy, utterance)]
             else:
                 tokens_positive = get_positive_tokens(utterance, all_object_names)
 

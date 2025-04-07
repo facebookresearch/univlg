@@ -16,8 +16,6 @@
 #SBATCH -e output/logs/%x_%j_%n.out
 #SBATCH --requeue
 
-printenv
-
 get_cuda_device_count() {
     if [ -n "$CUDA_VISIBLE_DEVICES" ]; then
         echo "$CUDA_VISIBLE_DEVICES" | tr ',' '\n' | wc -l
@@ -73,14 +71,28 @@ USE_DINO=${USE_DINO:-1}
 
 echo "BS: ${BS}, NUM_GPUS: ${NUM_GPUS}, SAMPLING_FRAME_NUM: ${SAMPLING_FRAME_NUM}, NUM_DATALOADERS: ${NUM_DATALOADERS}, VAL: ${NUM_VAL_DATALOADERS}"
 
+export CKPTS_PATH="ckpts"
+export PRECOMPUTED_SCANNET_PATH="$CKPTS_PATH/scannet"
+export DETECTRON2_DATASETS_2D="data/datasets_2d"
+export DETECTRON2_DATASETS="data/SEMSEG_100k"
+export REF_DATASET="data/refer_it_3d"
+export RETURN_SCENE_BATCH_SIZE=3
+SCANNET_DATA_DIR="data/mask3d_processed/scannet/train_validation_database.yaml"
+SCANNET200_DATA_DIR="data/mask3d_processed/scannet200/train_validation_database.yaml"
+MATTERPORT_DATA_DIR="data/mask3d_processed/matterport/train_validation_database.yaml"
+S3DIS_DATA_DIR="data/SEMSEG_100k/s3dis/train_validation_database.yaml"
 OUTPUT_DIR_PREFIX="outputs/train"
+
+if [[ -f .env ]]; then
+    source .env
+fi
 
 if [[ "$NAME" = "univlg" && "$EVAL_ONLY" -eq 1 ]]; then
     NAME="univlg_eval"
 fi
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-if [[ -z "$OUTPUT_DIR" ]]; then
+if [[ ! -d "$OUTPUT_DIR" ]]; then
     if [[ "$IGNORERUN" -eq 1 ]]; then
         OUTPUT_DIR="${OUTPUT_DIR_PREFIX}/debug/ignore_${TIMESTAMP}_${NAME}"
         BREAKPOINT_ON_ERROR=True
@@ -111,7 +123,7 @@ if [[ "$USE_SLURM" -eq 1 ]]; then
     echo "SLURM_NODEID="$SLURM_NODEID
 else
     SLURM_ARG=""
-    CMD="python"
+    CMD="uv run"
 fi
 
 if [[ "$USE_SWIN" -eq 1 ]]; then
@@ -144,7 +156,7 @@ else
 fi
 
 # Checks if CUDA is available on the node and if not, requeues job (if it detects we are inside a SLURM job).
-python mask2former_video/slurm_requeue.py
+uv run univlg/slurm_requeue.py
 
 $CMD $PYTHON_FILE --dist-url="tcp://127.0.0.1:$RANDOM" --num-gpus $NUM_GPUS --num-machines $NUM_MACHINES --config-file $CONFIG_FILE $EVAL_ARG $RESUME_ARG $SLURM_ARG \
 OUTPUT_DIR $OUTPUT_DIR SOLVER.IMS_PER_BATCH $((NUM_GPUS * NUM_MACHINES * BS)) \
