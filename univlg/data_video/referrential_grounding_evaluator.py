@@ -332,6 +332,7 @@ class ReferrentialGroundingEvaluator(DatasetEvaluator):
         None
         """
 
+        # Everything below indexes the 0th element of inputs/outputs because we require batch size = 1
         assert len(inputs) == len(outputs) == 1
         
         # Root word is the first object

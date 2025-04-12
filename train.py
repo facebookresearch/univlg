@@ -833,10 +833,7 @@ def main(args):
             cfg.MODEL.WEIGHTS, resume=args.resume
         )
         res = Trainer.test(cfg, model)
-        if cfg.TEST.AUG.ENABLED:
-            raise NotImplementedError
-        # if comm.is_main_process():
-        # verify_results(cfg, res)
+        if cfg.TEST.AUG.ENABLED: raise NotImplementedError
         if wandb.run is not None:
             wandb.finish()
         return res

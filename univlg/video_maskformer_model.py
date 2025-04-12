@@ -803,7 +803,10 @@ class UniVLG(nn.Module):
                 tokenizer=self.tokenizer,
             )
 
-        
+        if self.cfg.SAVE_DATA_SAMPLE:
+            from copy import deepcopy
+            multiview_data_orig = deepcopy(multiview_data)
+
         if do_duplicate and not self.training:
             new_bs = 1
             shape = [bs, v, H_padded, W_padded]
@@ -815,8 +818,6 @@ class UniVLG(nn.Module):
             shape = (new_bs, *shape[1:])
             bs = new_bs
         
-        ### Set of lines ###
-        # call to the model with some inputs
         mask_features, multi_scale_features = self.visual_backbone(
             images=images.tensor,
             multi_scale_xyz=multiview_data["multi_scale_xyz"] if self.cfg.MODEL.CROSS_VIEW_BACKBONE and decoder_3d else None,
@@ -879,6 +880,24 @@ class UniVLG(nn.Module):
                 .unsqueeze(0)
                 .repeat(scannet_pc.shape[0], 1)
             )
+
+        if self.cfg.SAVE_DATA_SAMPLE:
+            # When we run eval, we batch by scene for efficiency and thus have images of [v, ...] whereas we normally have [(bs, v), ...]
+            # For the standalone eval script, we just want [(bs, v), ...] to make things simpler.
+            
+            output_path = Path('ckpts') / 'misc' / 'data_sample.pth'
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            torch.save({
+                'images_tensor': torch.cat([images.tensor for _ in range(bs)], dim=0),
+                'multiview_data': multiview_data_orig,
+                'scannet_pc': scannet_pc,
+                'scannet_p2v': scannet_p2v,
+                'captions': captions,
+                'shape': shape,
+                'max_valid_points': [targets[i]['max_valid_points'] for i in range(len(targets))] if self.cfg.USE_GHOST_POINTS and decoder_3d else None
+            }, output_path)
+            print(f"Saved data sample to {output_path}. Exiting...")
+            exit()
 
         outputs = self.mask_decoder(
             mask_features,

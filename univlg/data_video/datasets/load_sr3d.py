@@ -11,6 +11,7 @@ import os
 import ast
 import json
 import copy
+import random
 from pathlib import Path
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from univlg.global_vars import NAME_MAP20
@@ -121,7 +122,6 @@ def load_ref(
     scannet_scenes = DatasetCatalog.get(scannet_split)
 
     if subsample_scenes is not None:
-        import random
         random.seed(0)
         scannet_scenes = random.sample(scannet_scenes, subsample_scenes)
 
@@ -134,15 +134,21 @@ def load_ref(
         cleared_lists = []
         for sr3d_instance in sr3d_data:
             if sr3d_instance['scan_id'] not in scene_name_to_list_id:
-                # assert False
+                print(f"Skipping scene {sr3d_instance['scan_id']} because it's not in the dataset")
                 continue
+
             if len(tmp_sr3d_data[sr3d_instance['scan_id']]) >= return_scene_batch_size:
                 # We fill up the entry in the dict until it reaches our desired batch size
                 cleared_lists.append(tmp_sr3d_data[sr3d_instance['scan_id']])
                 tmp_sr3d_data[sr3d_instance['scan_id']] = []
 
             tmp_sr3d_data[sr3d_instance['scan_id']].append(sr3d_instance)
+
         sr3d_data = list(tmp_sr3d_data.values()) + cleared_lists
+        if os.getenv('SHUFFLE_BATCHED_CAPTIONS', '0') == '1':
+            print(f"WARNING: Shuffling batched captions (SHUFFLE_BATCHED_CAPTIONS: {os.getenv('SHUFFLE_BATCHED_CAPTIONS')})...")
+            for i in range(len(sr3d_data)):
+                random.shuffle(sr3d_data[i])
 
     return sr3d_data, scannet_scenes, scene_name_to_list_id
 
@@ -164,6 +170,7 @@ def get_sr3d_meta(name_map):
 
 def register_ref(root):
     return_scene_batch_size = int(os.getenv('RETURN_SCENE_BATCH_SIZE', 6))
+    print(f"Using RETURN_SCENE_BATCH_SIZE: {return_scene_batch_size}...")
     assert 'scannet200_context_instance_train_200cls_single_highres_100k' in DatasetCatalog
     assert 'scannet200_context_instance_val_200cls_single_highres_100k' in DatasetCatalog
     for key, csv_file in _PREDEFINED_SPLITS_REF.items():

@@ -41,7 +41,7 @@ if [ "${DEBUGFAST:-0}" -eq 1 ]; then
 fi
 
 DIR="$(dirname "$PWD")"
-export PYTHONPATH=$DIR:$DIR/pretrain
+export PYTHONPATH="$DIR:$DIR/pretrain"
 export NCCL_P2P_DISABLE=1
 export NCCL_IB_DISABLE=1
 export NCCL_DEBUG=INFO
@@ -49,8 +49,20 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=8
 
+export CKPTS_PATH="ckpts"
+export PRECOMPUTED_SCANNET_PATH="${CKPTS_PATH}/scannet"
+export DETECTRON2_DATASETS_2D="data/datasets_2d"
+export DETECTRON2_DATASETS="data/SEMSEG_100k"
+export REF_DATASET="data/refer_it_3d"
+
+SCANNET_DATA_DIR="data/mask3d_processed/scannet/train_validation_database.yaml"
+SCANNET200_DATA_DIR="data/mask3d_processed/scannet200/train_validation_database.yaml"
+MATTERPORT_DATA_DIR="data/mask3d_processed/matterport/train_validation_database.yaml"
+S3DIS_DATA_DIR="data/SEMSEG_100k/s3dis/train_validation_database.yaml"
+OUTPUT_DIR_PREFIX="outputs/train"
+
 NUM_GPUS=${NUM_GPUS:-$(get_cuda_device_count)}
-BS=${BS:-7}
+BS=${BS:-2}
 SAMPLING_FRAME_NUM=${SAMPLING_FRAME_NUM:-15}
 SIDE_FRAMES=$(( (SAMPLING_FRAME_NUM - 1) / 2 ))
 CHECKPOINT_PERIOD=${CHECKPOINT_PERIOD:-8000}
@@ -62,26 +74,16 @@ NUM_VAL_DATALOADERS=${NUM_VAL_DATALOADERS:-4}
 NUM_MACHINES=${NUM_MACHINES:-1}
 BREAKPOINT_ON_ERROR=${BREAKPOINT_ON_ERROR:-False}
 USE_STANDALONE=${USE_STANDALONE:-0}
+export RETURN_SCENE_BATCH_SIZE=${RETURN_SCENE_BATCH_SIZE:-8}
 
 USE_SLURM=${USE_SLURM:-0}
 EVAL_ONLY=${EVAL_ONLY:-0}
 RESUME=${RESUME:-1}
 USE_SWIN=${USE_SWIN:-0}
 USE_DINO=${USE_DINO:-1}
+CKPT_PATH=${CKPT_PATH:-"${CKPTS_PATH}/misc/m2f_coco_swin.pth"}
 
-echo "BS: ${BS}, NUM_GPUS: ${NUM_GPUS}, SAMPLING_FRAME_NUM: ${SAMPLING_FRAME_NUM}, NUM_DATALOADERS: ${NUM_DATALOADERS}, VAL: ${NUM_VAL_DATALOADERS}"
-
-export CKPTS_PATH="ckpts"
-export PRECOMPUTED_SCANNET_PATH="$CKPTS_PATH/scannet"
-export DETECTRON2_DATASETS_2D="data/datasets_2d"
-export DETECTRON2_DATASETS="data/SEMSEG_100k"
-export REF_DATASET="data/refer_it_3d"
-export RETURN_SCENE_BATCH_SIZE=3
-SCANNET_DATA_DIR="data/mask3d_processed/scannet/train_validation_database.yaml"
-SCANNET200_DATA_DIR="data/mask3d_processed/scannet200/train_validation_database.yaml"
-MATTERPORT_DATA_DIR="data/mask3d_processed/matterport/train_validation_database.yaml"
-S3DIS_DATA_DIR="data/SEMSEG_100k/s3dis/train_validation_database.yaml"
-OUTPUT_DIR_PREFIX="outputs/train"
+echo "BS: ${BS}, NUM_GPUS: ${NUM_GPUS}, SAMPLING_FRAME_NUM: ${SAMPLING_FRAME_NUM}, NUM_DATALOADERS: ${NUM_DATALOADERS}, VAL: ${NUM_VAL_DATALOADERS}, CKPT_PATH: ${CKPT_PATH}"
 
 if [[ -f .env ]]; then
     source .env
@@ -126,12 +128,13 @@ else
     CMD="uv run"
 fi
 
-if [[ "$USE_SWIN" -eq 1 ]]; then
-    CONFIG_FILE="univlg/configs/swin_3d.yaml"
-elif [[ "$USE_DINO" -eq 1 ]]; then
-    echo "Using DINOv2"
+if [[ "$USE_DINO" -eq 1 ]]; then
     CONFIG_FILE="univlg/configs/dinov2_3d.yaml"
+elif [[ "$USE_SWIN" -eq 1 ]]; then
+    echo "Using Swin..."
+    CONFIG_FILE="univlg/configs/swin_3d.yaml"
 else
+    echo "Using ResNet..."
     CONFIG_FILE="univlg/configs/3d.yaml"
 fi
 
@@ -150,7 +153,8 @@ else
 fi
 
 if [[ "$USE_STANDALONE" -eq 1 ]]; then
-    PYTHON_FILE="standalone_eval.py"
+    export PYTHONPATH="$PYTHONPATH:$PWD"
+    PYTHON_FILE="scripts/standalone_eval.py"
 else
     PYTHON_FILE="train.py"
 fi
@@ -163,7 +167,7 @@ OUTPUT_DIR $OUTPUT_DIR SOLVER.IMS_PER_BATCH $((NUM_GPUS * NUM_MACHINES * BS)) \
 SOLVER.CHECKPOINT_PERIOD $CHECKPOINT_PERIOD TEST.EVAL_PERIOD $EVAL_PERIOD \
 INPUT.FRAME_LEFT $SIDE_FRAMES INPUT.FRAME_RIGHT $SIDE_FRAMES INPUT.SAMPLING_FRAME_NUM $SAMPLING_FRAME_NUM \
 INPUT.FRAME_LEFT_2D 0 INPUT.FRAME_RIGHT_2D 0 INPUT.SAMPLING_FRAME_NUM_2D 1 \
-MODEL.WEIGHTS $CKPTS_PATH/misc/m2f_coco_swin.pth \
+MODEL.WEIGHTS $CKPT_PATH \
 SOLVER.BASE_LR 1e-4 \
 MODEL.CROSS_VIEW_CONTEXTUALIZE True \
 INPUT.CAMERA_DROP False \

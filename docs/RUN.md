@@ -54,7 +54,6 @@ For example:
 CKPT_PATH="ckpts/univlg.pth"
 ...
 # Then, add the following configs to the end of the command:
-MODEL.WEIGHTS "$CKPT_PATH" \
 USE_AUTO_NOUN_DETECTION True \
 VISUALIZE_REF False VISUALIZE_LOG_DIR "$OUTPUT_DIR/viz_ref" \
 DINO_EVAL_BATCH True DINO_EVAL_BATCH_SIZE 8
@@ -62,18 +61,31 @@ DINO_EVAL_BATCH True DINO_EVAL_BATCH_SIZE 8
 
 - To visualize the results, set `VISUALIZE_REF` to `True`. We use [Pyviz3D](https://github.com/francisengelmann/PyViz3D) and instructions will be printed to the console explaining how to view the results.
 
-A complete example is below:
+**Note:** `BS` is not used for evaluation. Each rank has a "batch size" of 1 scene, and a maximum number of captions controlled by the `RETURN_SCENE_BATCH_SIZE` environment variable. Thus, we process a single visual scene but multiple captions in each forward pass during evaluation. For faster evaluation, try increasing `RETURN_SCENE_BATCH_SIZE`, although given the differences in scene size and number of captions, this can cause OOM later on. The caption batching per scene is done in `univlg/data_video/datasets/load_sr3d.py`.
+
+A minimal example for SR3D-only evaluation is below:
+
+**Note: The `_5` suffix is used to subsample the dataset to 5 scenes for evaluation, only for debugging purposes.**
+
 ```bash
 export CKPT_PATH="ckpts/univlg.pth"
 source scripts/setup.sh
 configure_local
-BS=2 BS2D=2 BS3D=2 NUM_VAL_DATALOADERS=2 NUM_DATALOADERS=10 EVAL_ONLY=1 $PREFIX "${PREFIX_ARGS[@]}" scripts/main.sh \
-MODEL.WEIGHTS "$CKPT_PATH" \
+NUM_VAL_DATALOADERS=2 NUM_DATALOADERS=10 EVAL_ONLY=1 $PREFIX "${PREFIX_ARGS[@]}" scripts/main.sh \
+DATASETS.TRAIN "('sr3d_ref_scannet_train_5_single',)" \
+DATASETS.TEST "('sr3d_ref_scannet_val_5_single_batched',)"
+```
+
+A more complete example for 2D-3D evaluation is below:
+```bash
+export CKPT_PATH="ckpts/univlg.pth"
+source scripts/setup.sh
+configure_local
+BS2D=2 BS3D=2 NUM_VAL_DATALOADERS=2 NUM_DATALOADERS=10 EVAL_ONLY=1 $PREFIX "${PREFIX_ARGS[@]}" scripts/main.sh \
 USE_AUTO_NOUN_DETECTION True \
 VISUALIZE_REF True VISUALIZE_LOG_DIR "$OUTPUT_DIR/viz_ref" \
 DINO_EVAL_BATCH True DINO_EVAL_BATCH_SIZE 8
 ```
-
 
 ### ScanRefer Evaluation
 # TODO: Make path generic.
@@ -91,7 +103,7 @@ SCANNET200_DATA_DIR "/path/to/mask3d_processed/scannet200/test_database.yaml" \
 export CKPT_PATH="ckpts/ckpt.pth"
 source scripts/setup.sh
 configure_local
-EVAL_ONLY=1 NUM_DATALOADERS=0 NUM_VAL_DATALOADERS=2 BS=3 EVAL_ONLY=1 $PREFIX "${PREFIX_ARGS[@]}" scripts/main.sh \
+EVAL_ONLY=1 NUM_DATALOADERS=0 NUM_VAL_DATALOADERS=2 EVAL_ONLY=1 $PREFIX "${PREFIX_ARGS[@]}" scripts/main.sh \
 DATASETS.TRAIN "('scanqa_ref_scannet_train_single',)" \
 DATASETS.TEST "('scanqa_ref_scannet_val_single_batched',)" \
 DINO_EVAL_BATCH True DINO_EVAL_BATCH_SIZE 64 \
@@ -102,6 +114,31 @@ AR_LLM True MODEL.MASK_FORMER.GENERATION_WEIGHT 1000.0 AR_EMBED True AR_INSTRUCT
 and set the test dataset to:
 ```
 DATASETS.TEST "('scanrefer_scannet_anchor_test_single_batched',)"
+```
+
+## Standalone Evaluation
+
+We additionally provide a standalone evaluation script that uses a minimal amount of pre-processing and post-processing code. We have a pre-saved data sample, and demonstrate how to load from raw sensor data.
+
+To use the standalone evaluation script, run:
+```bash
+export CKPT_PATH="ckpts/univlg.pth"
+source scripts/setup.sh
+configure_local
+USE_STANDALONE=1 $PREFIX "${PREFIX_ARGS[@]}" scripts/main.sh \
+USE_AUTO_NOUN_DETECTION False \
+USE_SEGMENTS False
+```
+
+To save a different data sample (assuming you have the proper datasets configured), run:
+```bash
+export CKPT_PATH="ckpts/univlg.pth"
+source scripts/setup.sh
+configure_local
+SHUFFLE_BATCHED_CAPTIONS=1 RETURN_SCENE_BATCH_SIZE=32 EVAL_ONLY=1 $PREFIX "${PREFIX_ARGS[@]}" scripts/main.sh \
+DATASETS.TRAIN "('sr3d_ref_scannet_train_single',)" \
+DATASETS.TEST "('sr3d_ref_scannet_val_single_batched',)" \
+SAVE_DATA_SAMPLE True
 ```
 
 ## Notes

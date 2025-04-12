@@ -14,8 +14,8 @@ def load_nlp_data():
 
     import nltk
     import spacy
-    # pip install spacy nltk
-    # python -m spacy download en_core_web_sm
+    # uv run pip install spacy nltk pip
+    # uv run spacy download en_core_web_sm
     nltk.download("stopwords")
     try:
         nlp = spacy.load("en_core_web_sm")

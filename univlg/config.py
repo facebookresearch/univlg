@@ -423,3 +423,4 @@ def add_maskformer2_video_config(cfg):
     cfg.AR_LLM = False
     cfg.AR_EMBED = False
     cfg.AR_INSTRUCT = False
+    cfg.SAVE_DATA_SAMPLE = False

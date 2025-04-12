@@ -27,7 +27,6 @@ from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import urlparse
 import inspect
-
 import numpy as np
 import torch
 import torch.distributed as dist
@@ -653,9 +652,6 @@ def print_memory_summary():
     val = print_memory(verbose=False, print_output=False)
     log_func(f"GPU Cur Reserved: {val:.2f}MB, {val / (torch.cuda.get_device_properties(0).total_memory / 1024**2) * 100:.2f}%")
 
-
-import inspect
-
 @contextlib.contextmanager
 def show_memory_usage(empty_cache: bool = True, verbose: bool = False, print_output=False, show_caller: bool = True):
     synchronize_device()
@@ -801,6 +797,12 @@ def synchronize_device():
 
 def clear_cache():
     if is_torch_cuda_available():
+        # This caused untold grief. Without calling `_cuda_clearCublasWorkspaces`,
+        # some model configurations would eventually cause a CUDA OOM during inference. See:
+        # https://github.com/pytorch/pytorch/issues/99835, https://github.com/pytorch/pytorch/issues/105181
+        torch._C._cuda_clearCublasWorkspaces()
+        torch._dynamo.reset()
+        import gc; gc.collect()
         torch.cuda.empty_cache()
     elif is_torch_xla_available():
         rprint("Clearing cache not supported for XLA")
