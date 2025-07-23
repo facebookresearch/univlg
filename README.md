@@ -1,6 +1,6 @@
 <div align="center">
 <br>
-<h3>Unifying 2D and 3D Vision-Language Understanding</h3>
+<h3>Unifying 2D and 3D Vision-Language Understanding  </h3>
 
 <img src="docs/images/teaser.png" width="1000">
 
@@ -19,6 +19,8 @@
 
 <sup>1</sup> Carnegie Mellon University&nbsp;
 <sup>2</sup> Meta AI&nbsp;
+
+ICML 2025
  
 [![ArXiv](https://img.shields.io/badge/ArXiv-<2503.10745>-<COLOR>.svg)](https://arxiv.org/abs/2503.10745) [![Webpage](https://img.shields.io/badge/Webpage-UniVLG-<COLOR>.svg)](https://univlg.github.io/) 
 
